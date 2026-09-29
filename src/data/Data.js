@@ -2535,7 +2535,293 @@ const skills = [
         },
       },
     ],
-
+  
     projects: [],
   },
 ];
+
+// =====================================================
+// PORTFOLIO PROJECTS
+// =====================================================
+
+const projects = [
+  {
+    id: 1,
+    title: "Personal Portfolio",
+    description:
+      "Build a simple personal website where you introduce yourself and showcase your skills.",
+    difficulty: "Beginner",
+    category: "Web Development",
+    skills: ["HTML", "CSS"],
+    checklist: [
+      "Plan the sections your portfolio needs (about, skills, contact)",
+      "Build the HTML structure for each section",
+      "Style the page with CSS, including spacing and colors",
+      "Make sure the layout works on a phone-sized screen",
+      "Publish or export the finished files",
+    ],
+  },
+
+  {
+    id: 2,
+    title: "Responsive Landing Page",
+    description:
+      "Create a professional landing page that works beautifully on both desktop and mobile devices.",
+    difficulty: "Beginner",
+    category: "Web Development",
+    skills: ["HTML", "CSS", "Responsive Design"],
+    checklist: [
+      "Sketch the layout for desktop and mobile",
+      "Build the HTML structure",
+      "Add responsive CSS using flexbox or grid",
+      "Test the page at three different screen widths",
+      "Fix any overlapping or broken elements",
+    ],
+  },
+
+  {
+    id: 3,
+    title: "JavaScript To-Do App",
+    description:
+      "Build a task management application where users can create, complete, and delete tasks.",
+    difficulty: "Beginner",
+    category: "Web Development",
+    skills: ["HTML", "CSS", "JavaScript"],
+    checklist: [
+      "Build the HTML structure for the task list",
+      "Style the list and input field with CSS",
+      "Write JavaScript to add a new task",
+      "Write JavaScript to mark a task complete and delete it",
+      "Test adding, completing and deleting several tasks",
+    ],
+  },
+
+  {
+    id: 4,
+    title: "Weather Dashboard",
+    description:
+      "Build an application that retrieves weather information from an API and displays it clearly.",
+    difficulty: "Intermediate",
+    category: "Web Development",
+    skills: ["React", "API", "JavaScript"],
+    checklist: [
+      "Choose and register for a weather API",
+      "Build the input form for a city name",
+      "Fetch data from the API using JavaScript or React",
+      "Display the returned weather information clearly",
+      "Handle a city that is not found without breaking the page",
+    ],
+  },
+
+  {
+    id: 5,
+    title: "Student Result Portal",
+    description:
+      "Create a system where students can log in and view their academic results.",
+    difficulty: "Intermediate",
+    category: "Web Development",
+    skills: ["React", "Node.js", "Express", "MySQL"],
+    checklist: [
+      "Design the database structure for students and results",
+      "Build the backend API with Node.js and Express",
+      "Connect the backend to a MySQL database",
+      "Build the React frontend for login and viewing results",
+      "Test the full flow from login to viewing a result",
+    ],
+    premium: true,
+  },
+
+  {
+    id: 6,
+    title: "Mobile App Redesign",
+    description:
+      "Choose an existing mobile application and redesign its user experience and interface.",
+    difficulty: "Beginner",
+    category: "UI/UX Design",
+    skills: ["UX Research", "Wireframing", "UI Design"],
+    checklist: [
+      "Choose an app and identify three usability problems",
+      "Sketch a wireframe for the improved flow",
+      "Design the improved screens",
+      "Write a short explanation of what changed and why",
+      "Compare the before and after side by side",
+    ],
+  },
+
+  {
+    id: 7,
+    title: "Business Dashboard",
+    description:
+      "Design a dashboard that presents important business information in a clear and useful way.",
+    difficulty: "Intermediate",
+    category: "UI/UX Design",
+    skills: ["UI Design", "UX", "Data Visualization"],
+    checklist: [
+      "List the key metrics the dashboard needs to show",
+      "Sketch a wireframe of the layout",
+      "Design the visual version with a consistent style",
+      "Add sample charts or data visualizations",
+      "Review the design for clarity and visual hierarchy",
+    ],
+  },
+
+  {
+    id: 8,
+    title: "Sales Data Analysis",
+    description:
+      "Analyze a sales dataset and identify trends, patterns, and useful business insights.",
+    difficulty: "Intermediate",
+    category: "Data Analysis",
+    skills: ["Excel", "Statistics", "Data Visualization"],
+    checklist: [
+      "Find or create a sales dataset",
+      "Clean the data and remove errors or duplicates",
+      "Calculate key statistics such as totals and averages",
+      "Build at least two charts from the data",
+      "Write three insights the data reveals",
+    ],
+  },
+
+  {
+    id: 9,
+    title: "AI Chat Assistant",
+    description:
+      "Build a simple conversational application that demonstrates how AI can be integrated into software.",
+    difficulty: "Advanced",
+    category: "Artificial Intelligence",
+    skills: ["JavaScript", "APIs", "AI"],
+    checklist: [
+      "Define what the assistant should help users do",
+      "Set up the interface for sending and receiving messages",
+      "Connect the interface to an AI or language API",
+      "Handle loading and error states in the conversation",
+      "Test the assistant with several different questions",
+    ],
+    premium: true,
+  },
+];
+
+// =====================================================
+// OPPORTUNITIES
+// =====================================================
+
+const opportunities = [
+  {
+    id: 1,
+    title: "Frontend Development Intern",
+    organization: "TechHub Lagos",
+    location: "Lagos, Nigeria (Hybrid)",
+    type: "Internship",
+    category: "Web Development",
+    skills: ["HTML", "CSS", "JavaScript"],
+    description:
+      "Work with a small product team building customer-facing web features. Good fit for someone who has completed the Web Development roadmap and a portfolio project.",
+    postedAt: "2026-08-01",
+    applyUrl: null,
+  },
+
+  {
+    id: 2,
+    title: "Junior UI/UX Designer",
+    organization: "Northbridge Studio",
+    location: "Abuja, Nigeria (Remote)",
+    type: "Entry-level",
+    category: "UI/UX Design",
+    skills: ["Wireframing", "UI Design", "Prototyping"],
+    description:
+      "Support the design team with wireframes, mockups and prototypes for mobile and web products. A portfolio with at least one complete case study is required.",
+    postedAt: "2026-07-20",
+    applyUrl: null,
+  },
+
+  {
+    id: 3,
+    title: "Data Analysis Trainee Program",
+    organization: "Insight Analytics NG",
+    location: "Port Harcourt, Nigeria",
+    type: "Traineeship",
+    category: "Data Analysis",
+    skills: ["Spreadsheets", "SQL", "Data Visualization"],
+    description:
+      "A structured six-month program for people who can clean, analyze and visualize a dataset and explain what it shows.",
+    postedAt: "2026-08-10",
+    applyUrl: null,
+  },
+
+  {
+    id: 4,
+    title: "React Developer (Junior)",
+    organization: "Vertex Software",
+    location: "Remote (Nigeria-based)",
+    type: "Full-time",
+    category: "Web Development",
+    skills: ["React", "JavaScript", "APIs"],
+    description:
+      "Join a small engineering team shipping a React application. Comfortable with components, props, state and consuming REST APIs.",
+    postedAt: "2026-08-15",
+    applyUrl: null,
+  },
+
+  {
+    id: 5,
+    title: "Social Media & Content Intern",
+    organization: "Bloom Marketing Collective",
+    location: "Lagos, Nigeria",
+    type: "Internship",
+    category: "Digital Marketing",
+    skills: ["Content Marketing", "Social Media Marketing"],
+    description:
+      "Plan and create content calendars, draft posts and track engagement across two client accounts.",
+    postedAt: "2026-07-28",
+    applyUrl: null,
+  },
+
+  {
+    id: 6,
+    title: "AI Product Support Assistant",
+    organization: "Cortex Labs",
+    location: "Remote",
+    type: "Part-time",
+    category: "Artificial Intelligence",
+    skills: ["AI", "APIs", "JavaScript"],
+    description:
+      "Help test and document an AI-assisted product, write example prompts and report issues to the engineering team.",
+    postedAt: "2026-08-05",
+    applyUrl: null,
+  },
+
+  {
+    id: 7,
+    title: "Video Editor - Short-form Content",
+    organization: "Reel House Studios",
+    location: "Ibadan, Nigeria",
+    type: "Freelance",
+    category: "Video Editing",
+    skills: ["Cuts & Transitions", "Audio", "Color"],
+    description:
+      "Edit short-form video content for two brand accounts on a weekly basis. A short reel or sample edit is required to apply.",
+    postedAt: "2026-08-12",
+    applyUrl: null,
+  },
+
+  {
+    id: 8,
+    title: "Backend Engineering Intern",
+    organization: "Fintrust Systems",
+    location: "Lagos, Nigeria (On-site)",
+    type: "Internship",
+    category: "Web Development",
+    skills: ["Node.js & Express", "Databases", "APIs"],
+    description:
+      "Build and maintain API endpoints for an internal tool, working directly with a senior backend engineer.",
+    postedAt: "2026-08-18",
+    applyUrl: null,
+  },
+];
+
+// =====================================================
+// EXPORTS
+// =====================================================
+
+export { skills, projects, opportunities };
+

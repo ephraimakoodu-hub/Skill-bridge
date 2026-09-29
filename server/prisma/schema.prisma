@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum PaymentStatus {
+  INITIALIZED
+  SUCCESS
+  FAILED
+  ABANDONED
+  REFUNDED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ProjectStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model User {
+  id                 String             @id @default(cuid())
+  email              String             @unique @db.VarChar(255)
+  passwordHash       String             @db.VarChar(255)
+  name               String             @db.VarChar(120)
+  bio                String?            @db.VarChar(500)
+  location           String?            @db.VarChar(120)
+  role               Role               @default(USER)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  sessions           Session[]
+  lessonProgress     LessonProgress[]
+  projectStates      ProjectState[]
+  savedOpportunities SavedOpportunity[]
+  payments           Payment[]
+  subscription       Subscription?
+  certificates       Certificate[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique @db.VarChar(64)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Skill {
+  id          String   @id
+  name        String   @db.VarChar(120)
+  description String   @db.Text
+  level       String?  @db.VarChar(50)
+  category    String?  @db.VarChar(100)
+  lessons     Lesson[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Lesson {
+  id              String           @id
+  skillId         String
+  title           String           @db.VarChar(180)
+  description     String?          @db.Text
+  orderIndex      Int
+  premium         Boolean          @default(false)
+  content         Json
+  deepDiveContent Json?
+  skill           Skill            @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  progress        LessonProgress[]
+
+  @@unique([skillId, orderIndex])
+  @@index([skillId])
+}
+
+model LessonProgress {
+  id          String    @id @default(cuid())
+  userId      String
+  lessonId    String
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson      Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+}
+
+model Project {
+  id          String         @id
+  title       String         @db.VarChar(180)
+  description String         @db.Text
+  difficulty  String?        @db.VarChar(50)
+  category    String?        @db.VarChar(100)
+  skills      Json
+  checklist   Json
+  premium     Boolean        @default(false)
+  states      ProjectState[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model ProjectState {
+  id          String        @id @default(cuid())
+  userId      String
+  projectId   String
+  status      ProjectStatus @default(NOT_STARTED)
+  checklist   Json
+  notes       String        @db.Text
+  startedAt   DateTime?
+  completedAt DateTime?
+  updatedAt   DateTime      @updatedAt
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project     Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+  @@index([userId])
+}
+
+model Opportunity {
+  id           String             @id
+  title        String             @db.VarChar(180)
+  organization String             @db.VarChar(180)
+  location     String?            @db.VarChar(180)
+  type         String?            @db.VarChar(80)
+  category     String?            @db.VarChar(100)
+  skills       Json
+  description  String             @db.Text
+  postedAt     DateTime?
+  applyUrl     String             @db.VarChar(1000)
+  savedBy      SavedOpportunity[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+}
+
+model SavedOpportunity {
+  id            String      @id @default(cuid())
+  userId        String
+  opportunityId String
+  createdAt     DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, opportunityId])
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  userId          String
+  reference       String        @unique @db.VarChar(120)
+  amountKobo      Int
+  currency        String        @default("NGN") @db.VarChar(3)
+  status          PaymentStatus @default(INITIALIZED)
+  gatewayResponse String?       @db.Text
+  paidAt          DateTime?
+  metadata        Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  user            User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  subscription    Subscription?
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Subscription {
+  id          String             @id @default(cuid())
+  userId      String             @unique
+  paymentId   String?            @unique
+  status      SubscriptionStatus @default(INACTIVE)
+  plan        String             @default("premium") @db.VarChar(50)
+  activatedAt DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment     Payment?           @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+}
+
+model Certificate {
+  id            String   @id @default(cuid())
+  userId        String
+  certificateNo String   @unique @db.VarChar(80)
+  title         String   @db.VarChar(180)
+  issuedAt      DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}

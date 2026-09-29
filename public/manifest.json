@@ -1,0 +1,11 @@
+{
+  "short_name": "SkillBridge NG",
+  "name": "SkillBridge NG - Learn. Build. Showcase. Grow.",
+  "icons": [
+    { "src": "favicon.svg", "type": "image/svg+xml", "sizes": "any" }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0F3D3E",
+  "background_color": "#ffffff"
+}

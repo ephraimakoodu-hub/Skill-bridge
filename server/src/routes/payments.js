@@ -3,7 +3,6 @@ import { z } from "zod";
 
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
-import { env } from "../config/env.js";
 
 const router = Router();
 
@@ -55,6 +54,9 @@ router.get(
 
 // ------------------------------------------------------------
 // POST /api/payments/initialize
+//
+// Creates a manual bank-transfer payment request.
+// No Paystack is used here.
 // ------------------------------------------------------------
 
 router.post(
@@ -75,57 +77,79 @@ router.post(
         });
       }
 
-      const reference =
-        `SBNG-${Date.now()}-${Math.random()
-          .toString(36)
-          .slice(2, 10)}`;
-
-      const response = await fetch(
-        "https://api.paystack.co/transaction/initialize",
-        {
-          method: "POST",
-          headers: {
-            Authorization:
-              `Bearer ${env.PAYSTACK_SECRET_KEY}`,
-            "Content-Type": "application/json",
+      // Check whether this user already has a pending payment.
+      const existingPayment =
+        await prisma.payment.findFirst({
+          where: {
+            userId: req.user.id,
+            amountKobo: PREMIUM_AMOUNT_KOBO,
+            status: "INITIALIZED",
           },
-          body: JSON.stringify({
-            email: req.user.email,
-            amount: PREMIUM_AMOUNT_KOBO,
-            currency: "NGN",
-            reference,
-            metadata: {
-              userId: req.user.id,
-              product: "skillbridge-premium",
-            },
-          }),
-        }
-      );
+          orderBy: {
+            createdAt: "desc",
+          },
+        });
 
-      const result = await response.json();
-
-      if (!response.ok || !result.status) {
-        return res.status(502).json({
-          error: "Unable to initialize payment.",
+      if (existingPayment) {
+        return res.json({
+          paymentMethod: "bank_transfer",
+          reference: existingPayment.reference,
+          amountNgn: PREMIUM_NGN,
+          status: "PENDING",
+          bankDetails: {
+            bankName:
+              process.env.BANK_NAME || "YOUR BANK NAME",
+            accountName:
+              process.env.BANK_ACCOUNT_NAME ||
+              "YOUR ACCOUNT NAME",
+            accountNumber:
+              process.env.BANK_ACCOUNT_NUMBER ||
+              "YOUR ACCOUNT NUMBER",
+          },
+          instructions:
+            "Transfer exactly ₦20,000 and keep your transaction reference. After payment, submit the payment reference for verification.",
         });
       }
 
-      await prisma.payment.create({
-        data: {
-          userId: req.user.id,
-          reference,
-          amountKobo: PREMIUM_AMOUNT_KOBO,
-          currency: "NGN",
-          status: "INITIALIZED",
-          metadata: result.data ?? undefined,
-        },
-      });
+      const reference =
+        `SB-BANK-${Date.now()}-${Math.random()
+          .toString(36)
+          .slice(2, 8)
+          .toUpperCase()}`;
 
-      res.json({
-        reference,
-        authorizationUrl:
-          result.data.authorization_url,
-        accessCode: result.data.access_code,
+      const payment =
+        await prisma.payment.create({
+          data: {
+            userId: req.user.id,
+            reference,
+            amountKobo: PREMIUM_AMOUNT_KOBO,
+            currency: "NGN",
+            status: "INITIALIZED",
+            metadata: {
+              paymentMethod: "bank_transfer",
+              product: "skillbridge-premium",
+              durationMonths: 6,
+            },
+          },
+        });
+
+      res.status(201).json({
+        paymentMethod: "bank_transfer",
+        reference: payment.reference,
+        amountNgn: PREMIUM_NGN,
+        status: "PENDING",
+        bankDetails: {
+          bankName:
+            process.env.BANK_NAME || "YOUR BANK NAME",
+          accountName:
+            process.env.BANK_ACCOUNT_NAME ||
+            "YOUR ACCOUNT NAME",
+          accountNumber:
+            process.env.BANK_ACCOUNT_NUMBER ||
+            "YOUR ACCOUNT NUMBER",
+        },
+        instructions:
+          "Transfer exactly ₦20,000 and keep your transaction reference. After payment, submit the payment reference for verification.",
       });
     } catch (error) {
       next(error);
@@ -134,18 +158,24 @@ router.post(
 );
 
 // ------------------------------------------------------------
-// GET /api/payments/verify/:reference
+// POST /api/payments/confirm
+//
+// User tells the system that they have made the transfer.
+// This DOES NOT activate Premium.
+// An admin must verify the bank payment first.
 // ------------------------------------------------------------
 
-router.get(
-  "/verify/:reference",
+router.post(
+  "/confirm",
   requireAuth,
   async (req, res, next) => {
     try {
       const { reference } =
-        z.object({
-          reference: z.string().min(1).max(120),
-        }).parse(req.params);
+        z
+          .object({
+            reference: z.string().min(1).max(120),
+          })
+          .parse(req.body);
 
       const payment =
         await prisma.payment.findFirst({
@@ -161,108 +191,71 @@ router.get(
         });
       }
 
-      // Already successfully verified.
       if (payment.status === "SUCCESS") {
-        const subscription =
-          await prisma.subscription.findUnique({
-            where: {
-              userId: req.user.id,
-            },
-          });
-
         return res.json({
-          paid: true,
-          subscription: subscription
-            ? {
-                status: subscription.status,
-                plan: subscription.plan,
-                activatedAt:
-                  subscription.activatedAt,
-              }
-            : null,
+          confirmed: true,
+          status: "SUCCESS",
+          message:
+            "This payment has already been approved.",
         });
       }
 
-      const response = await fetch(
-        `https://api.paystack.co/transaction/verify/${encodeURIComponent(
-          reference
-        )}`,
-        {
-          headers: {
-            Authorization:
-              `Bearer ${env.PAYSTACK_SECRET_KEY}`,
+      await prisma.payment.update({
+        where: {
+          id: payment.id,
+        },
+        data: {
+          metadata: {
+            ...(payment.metadata || {}),
+            paymentMethod: "bank_transfer",
+            customerConfirmedAt:
+              new Date().toISOString(),
           },
-        }
-      );
+        },
+      });
 
-      const result = await response.json();
+      res.json({
+        confirmed: true,
+        status: "PENDING",
+        message:
+          "Payment submitted for verification. Premium will be activated after the payment is verified.",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
-      if (!response.ok || !result.status) {
-        return res.status(502).json({
-          error: "Unable to verify payment.",
-        });
-      }
+// ------------------------------------------------------------
+// GET /api/payments/verify/:reference
+//
+// For bank transfer, verification is manual.
+// This endpoint only reports the current payment status.
+// ------------------------------------------------------------
 
-      const transaction = result.data;
+router.get(
+  "/verify/:reference",
+  requireAuth,
+  async (req, res, next) => {
+    try {
+      const { reference } =
+        z
+          .object({
+            reference: z.string().min(1).max(120),
+          })
+          .parse(req.params);
 
-      const success =
-        transaction?.status === "success" &&
-        transaction?.amount === payment.amountKobo &&
-        transaction?.currency === payment.currency &&
-        transaction?.reference === payment.reference;
-
-      if (success) {
-        await prisma.$transaction([
-          prisma.payment.update({
-            where: {
-              id: payment.id,
-            },
-            data: {
-              status: "SUCCESS",
-              paidAt: transaction.paid_at
-                ? new Date(transaction.paid_at)
-                : new Date(),
-              gatewayResponse:
-                transaction.gateway_response ??
-                null,
-              metadata: transaction,
-            },
-          }),
-
-          prisma.subscription.upsert({
-            where: {
-              userId: req.user.id,
-            },
-            create: {
-              userId: req.user.id,
-              paymentId: payment.id,
-              status: "ACTIVE",
-              plan: "premium",
-              activatedAt: new Date(),
-            },
-            update: {
-              paymentId: payment.id,
-              status: "ACTIVE",
-              plan: "premium",
-              activatedAt: new Date(),
-            },
-          }),
-        ]);
-      } else {
-        await prisma.payment.update({
+      const payment =
+        await prisma.payment.findFirst({
           where: {
-            id: payment.id,
+            reference,
+            userId: req.user.id,
           },
-          data: {
-            status:
-              transaction?.status === "abandoned"
-                ? "ABANDONED"
-                : "FAILED",
-            gatewayResponse:
-              transaction?.gateway_response ??
-              null,
-            metadata: transaction ?? undefined,
-          },
+        });
+
+      if (!payment) {
+        return res.status(404).json({
+          error: "Payment not found.",
         });
       }
 
@@ -279,7 +272,9 @@ router.get(
         });
 
       res.json({
-        paid: success,
+        paid: payment.status === "SUCCESS",
+        paymentStatus: payment.status,
+        reference: payment.reference,
         subscription,
       });
     } catch (error) {

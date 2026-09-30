@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 import ScrollToTop from "./components/ScrollToTop";
 
 import Home from "./pages/Home";
@@ -28,6 +29,7 @@ import Progress from "./pages/Progress";
 
 import Subscribe from "./pages/Subscribe";
 import Certificate from "./pages/Certificate";
+import AdminDashboard from "./pages/AdminDashboard";
 
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -83,7 +85,7 @@ function App() {
               element={<Portfolio />}
             />
 
-            {/* Protected routes */}
+            {/* Protected user routes */}
             <Route element={<ProtectedRoute />}>
               <Route
                 path="/dashboard"
@@ -123,6 +125,14 @@ function App() {
               <Route
                 path="/projects/:projectId/build"
                 element={<ProjectWorkspace />}
+              />
+            </Route>
+
+            {/* Admin-only routes */}
+            <Route element={<AdminRoute />}>
+              <Route
+                path="/admin"
+                element={<AdminDashboard />}
               />
             </Route>
 

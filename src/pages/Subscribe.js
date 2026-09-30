@@ -5,15 +5,10 @@ import { useAuth } from "../context/AuthContext";
 import {
   getSubscription,
   initializePremium,
-  verifyPayment,
+  confirmPayment,
   PREMIUM_PRICE_NGN,
+  PREMIUM_DURATION_MONTHS,
 } from "../utils/subscriptionStore";
-
-import {
-  PAYSTACK_PUBLIC_KEY,
-  isPaystackConfigured,
-  isPaystackScriptLoaded,
-} from "../utils/paymentConfig";
 
 import Banner from "../components/Banner";
 import Icon from "../components/Icon";
@@ -53,11 +48,11 @@ export default function Subscribe() {
   const [loadingSubscription, setLoadingSubscription] =
     useState(true);
 
+  const [payment, setPayment] = useState(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [processing, setProcessing] = useState(false);
-
-  const configured = isPaystackConfigured();
+  const [confirmed, setConfirmed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,7 +96,7 @@ export default function Subscribe() {
     };
   }, [user]);
 
-  async function handlePay() {
+  async function handleStartPayment() {
     setError("");
     setMessage("");
 
@@ -123,172 +118,75 @@ export default function Subscribe() {
       return;
     }
 
-    if (!configured) {
-      setError(
-        "This deployment has not been configured with a real Paystack public key yet, so checkout cannot be started."
-      );
-
-      return;
-    }
-
-    if (!isPaystackScriptLoaded()) {
-      setError(
-        "The Paystack payment widget has not loaded yet. Refresh the page and try again."
-      );
-
-      return;
-    }
-
-    if (
-      !window.PaystackPop ||
-      typeof window.PaystackPop.setup !==
-        "function"
-    ) {
-      setError(
-        "The Paystack payment widget is unavailable. Please refresh the page and try again."
-      );
-
-      return;
-    }
-
     try {
       setProcessing(true);
 
-      /*
-       * Ask our backend to create the Paystack transaction.
-       * The backend owns the secret key and creates the
-       * transaction reference.
-       */
-      const payment =
-        await initializePremium();
+      const result = await initializePremium();
 
-      if (!payment?.reference) {
+      if (!result?.reference) {
         throw new Error(
           "The server did not return a payment reference."
         );
       }
 
-      /*
-       * Keep the callback as a normal, named function.
-       * Paystack requires callback to be a real function.
-       */
-      const handlePaystackCallback =
-        function (response) {
-          verifyCompletedPayment(
-            response?.reference
-          );
-        };
+      setPayment(result);
+      setConfirmed(false);
 
-      /*
-       * Paystack calls this when the checkout window
-       * is closed.
-       */
-      const handlePaystackClose =
-        function () {
-          setProcessing(false);
-
-          setMessage(
-            "Checkout was closed before payment completed."
-          );
-        };
-
-      const handler =
-        window.PaystackPop.setup({
-          key: PAYSTACK_PUBLIC_KEY,
-          email: user.email,
-          amount: PREMIUM_PRICE_NGN * 100,
-          currency: "NGN",
-          ref: payment.reference,
-          callback: handlePaystackCallback,
-          onClose: handlePaystackClose,
-        });
-
-      if (
-        !handler ||
-        typeof handler.openIframe !==
-          "function"
-      ) {
-        throw new Error(
-          "Paystack could not create the checkout window."
-        );
-      }
-
-      handler.openIframe();
+      setMessage(
+        "Transfer exactly ₦20,000 using the bank details below. After transferring, click \"I've made the payment\"."
+      );
     } catch (err) {
       console.error(
-        "Unable to initialize payment:",
+        "Unable to create payment request:",
         err
       );
 
-      setProcessing(false);
-
       setError(
         err.message ||
-          "Unable to start payment. Please try again."
+          "Unable to create the payment request. Please try again."
       );
+    } finally {
+      setProcessing(false);
     }
   }
 
-  async function verifyCompletedPayment(
-    reference
-  ) {
-    if (!reference) {
-      setProcessing(false);
-
+  async function handleConfirmPayment() {
+    if (!payment?.reference) {
       setError(
-        "Paystack did not return a payment reference."
+        "Payment reference is missing. Please start the payment again."
       );
 
       return;
     }
 
+    setError("");
+    setMessage("");
+
     try {
-      setMessage(
-        "Payment received. Verifying your transaction..."
+      setProcessing(true);
+
+      const result = await confirmPayment(
+        payment.reference
       );
 
-      setError("");
-
-      /*
-       * The browser only sends the reference.
-       *
-       * Our backend contacts Paystack using the
-       * secret key and decides whether payment succeeded.
-       */
-      const verification =
-        await verifyPayment(reference);
-
-      if (!verification.paid) {
-        setProcessing(false);
-
-        setError(
-          "Payment could not be verified. Premium has not been activated."
-        );
-
-        return;
-      }
-
-      setSubscription(
-        verification.subscription
-      );
-
-      setProcessing(false);
+      setConfirmed(true);
 
       setMessage(
-        "Payment verified successfully. Premium is now active on your account."
+        result?.message ||
+          "Payment submitted for verification. Premium will be activated after your payment is verified."
       );
     } catch (err) {
       console.error(
-        "Payment verification failed:",
+        "Unable to confirm payment:",
         err
       );
 
-      setProcessing(false);
-
       setError(
         err.message ||
-          "Payment was received but could not be verified yet. Please contact support if the problem continues."
+          "Unable to submit your payment confirmation. Please try again."
       );
+    } finally {
+      setProcessing(false);
     }
   }
 
@@ -384,26 +282,12 @@ export default function Subscribe() {
             />
 
             <span>
-              Payments are processed securely through
-              Paystack. SkillBridge NG verifies the
-              transaction on the server before Premium
-              access is activated.
+              Premium is currently paid by bank
+              transfer. Your payment is manually
+              verified before Premium access is
+              activated.
             </span>
           </div>
-
-          {!configured && (
-            <div
-              className="mt-16"
-              style={{ maxWidth: 760 }}
-            >
-              <Banner type="error">
-                No live Paystack public key is
-                configured for this deployment.
-                Checkout is disabled until one is
-                configured.
-              </Banner>
-            </div>
-          )}
 
           {message && (
             <div
@@ -489,8 +373,9 @@ export default function Subscribe() {
               </h2>
 
               <p className="text-sm text-muted mb-16">
-                One-time payment via Paystack.
-                Lifetime access on this account.
+                One-time payment for{" "}
+                {PREMIUM_DURATION_MONTHS} months
+                of Premium access.
               </p>
 
               <ul className="bullet-list">
@@ -551,10 +436,114 @@ export default function Subscribe() {
                     account.
                   </p>
                 </>
+              ) : payment ? (
+                <div className="mt-16">
+                  <div
+                    className="card"
+                    style={{
+                      background:
+                        "var(--gray-50)",
+                    }}
+                  >
+                    <h3>
+                      Bank transfer details
+                    </h3>
+
+                    <p className="text-sm text-muted">
+                      Transfer exactly{" "}
+                      <strong>
+                        ₦20,000
+                      </strong>{" "}
+                      to the account below.
+                    </p>
+
+                    <div className="mt-16">
+                      <p className="text-sm">
+                        <strong>
+                          Bank
+                        </strong>
+                        <br />
+                        {payment.bankDetails
+                          ?.bankName ||
+                          "Bank details unavailable"}
+                      </p>
+
+                      <p className="text-sm mt-8">
+                        <strong>
+                          Account name
+                        </strong>
+                        <br />
+                        {payment.bankDetails
+                          ?.accountName ||
+                          "Account details unavailable"}
+                      </p>
+
+                      <p className="text-sm mt-8">
+                        <strong>
+                          Account number
+                        </strong>
+                        <br />
+                        {payment.bankDetails
+                          ?.accountNumber ||
+                          "Account details unavailable"}
+                      </p>
+
+                      <p className="text-sm mt-8">
+                        <strong>
+                          Payment reference
+                        </strong>
+                        <br />
+                        {payment.reference}
+                      </p>
+                    </div>
+
+                    <p className="text-sm text-muted mt-16">
+                      After making the transfer,
+                      click the button below. Your
+                      payment will remain pending until
+                      it is manually verified.
+                    </p>
+
+                    {!confirmed ? (
+                      <button
+                        className="btn btn-accent btn-block mt-16"
+                        onClick={
+                          handleConfirmPayment
+                        }
+                        disabled={processing}
+                      >
+                        <Icon
+                          name="check"
+                          size={16}
+                        />
+
+                        {processing
+                          ? "Submitting..."
+                          : "I've made the payment"}
+                      </button>
+                    ) : (
+                      <p
+                        className="text-sm mt-16"
+                        style={{
+                          color:
+                            "var(--success)",
+                          fontWeight: 600,
+                        }}
+                      >
+                        <Icon
+                          name="checkCircle"
+                          size={15}
+                        />{" "}
+                        Payment submitted for
+                        verification.
+                      </p>
+                    )}
+                  </div>
+                </div>
               ) : (
                 <button
                   className="btn btn-accent btn-block mt-16"
-                  onClick={handlePay}
+                  onClick={handleStartPayment}
                   disabled={processing}
                 >
                   <Icon
@@ -563,8 +552,8 @@ export default function Subscribe() {
                   />
 
                   {processing
-                    ? "Processing payment..."
-                    : `Pay ${formattedPrice} with Paystack`}
+                    ? "Preparing payment..."
+                    : `Pay ${formattedPrice} by bank transfer`}
                 </button>
               )}
             </div>

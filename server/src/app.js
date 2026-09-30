@@ -1,3 +1,4 @@
+
 import express from "express";
 import helmet from "helmet";
 import cors from "cors";
@@ -11,6 +12,7 @@ import {
   notFound,
   errorHandler,
 } from "./middleware/errors.js";
+import adminRouter from "./routes/admin.js";
 
 import healthRouter from "./routes/health.js";
 import authRouter from "./routes/auth.js";
@@ -75,6 +77,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/payments", paymentsRouter);
 app.use("/api/progress", progressRouter);
 app.use("/api/projects", projectsRouter);
+app.use("/api/admin", adminRouter);
 app.use(
   "/api/opportunities",
   opportunitiesRouter

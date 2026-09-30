@@ -1,29 +1,16 @@
-
 // -----------------------------------------------------------------------
-// Paystack configuration
+// SkillBridge payment configuration
 //
-// Set REACT_APP_PAYSTACK_PUBLIC_KEY in a .env file at the project root.
-//
-// Example:
-// REACT_APP_PAYSTACK_PUBLIC_KEY=pk_test_xxxxxxxxxxxxxxxxx
-//
-// The public key is safe to expose in frontend code. Never put the
-// Paystack secret key in this file or anywhere in the frontend.
+// Premium is currently handled through manual bank transfer.
+// Paystack can be re-enabled later when a verified live payment account
+// is available.
 // -----------------------------------------------------------------------
 
-export const PAYSTACK_PUBLIC_KEY =
-  process.env.REACT_APP_PAYSTACK_PUBLIC_KEY || "";
+export const PREMIUM_PRICE_NGN = 20000;
+export const PREMIUM_DURATION_MONTHS = 6;
 
-export function isPaystackConfigured() {
-  return (
-    !!PAYSTACK_PUBLIC_KEY &&
-    PAYSTACK_PUBLIC_KEY.startsWith("pk_")
-  );
-}
+export const PAYMENT_METHOD = "bank_transfer";
 
-export function isPaystackScriptLoaded() {
-  return (
-    typeof window !== "undefined" &&
-    !!window.PaystackPop
-  );
+export function isPaymentConfigured() {
+  return PAYMENT_METHOD === "bank_transfer";
 }

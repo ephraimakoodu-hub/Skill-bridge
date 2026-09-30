@@ -9,8 +9,13 @@ import { publicUser, requireAuth } from "../middleware/auth.js";
 const router = Router();
 const credentials = z.object({ name: z.string().trim().min(1).max(120), email: z.string().trim().email().max(255), password: z.string().min(8).max(128) });
 const loginSchema = z.object({ email: z.string().trim().email().max(255), password: z.string().min(1).max(128) });
-const cookieOptions = { httpOnly: true, secure: env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: env.SESSION_DAYS * 86400000 };
-
+const cookieOptions = {
+  httpOnly: true,
+  secure: env.NODE_ENV === "production",
+  sameSite: env.NODE_ENV === "production" ? "none" : "lax",
+  path: "/",
+  maxAge: env.SESSION_DAYS * 86400000,
+};
 router.post("/register", async (req, res, next) => {
   try {
     const data = credentials.parse(req.body);
@@ -35,7 +40,7 @@ router.post("/login", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.post("/logout", async (req, res, next) => { try { await deleteSession(req.cookies[env.COOKIE_NAME]); res.clearCookie(env.COOKIE_NAME, { httpOnly: true, secure: env.NODE_ENV === "production", sameSite: "lax", path: "/" }); res.status(204).end(); } catch (e) { next(e); } });
+router.post("/logout", async (req, res, next) => { try { await deleteSession(req.cookies[env.COOKIE_NAME]); res.clearCookie(env.COOKIE_NAME, { httpOnly: true, secure: env.NODE_ENV === "production", sameSite: env.NODE_ENV === "production" ? "none" : "lax", path: "/" }); res.status(204).end(); } catch (e) { next(e); } });
 router.get("/me", requireAuth, async (req, res) => res.json({ user: publicUser(req.user) }));
 
 router.patch("/me", requireAuth, async (req, res, next) => {

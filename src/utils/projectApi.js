@@ -1,5 +1,5 @@
 const API_URL =
-  process.env.REACT_APP_API_URL || "http://localhost:4000/api";
+  process.env.REACT_APP_API_URL || "/api";
 
 async function request(path, options = {}) {
   const response = await fetch(`${API_URL}${path}`, {

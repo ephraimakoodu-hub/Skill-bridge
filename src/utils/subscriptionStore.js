@@ -1,6 +1,6 @@
 const API_URL =
   process.env.REACT_APP_API_URL ||
-  "http://localhost:4000/api";
+  "/api";
 
 export const PREMIUM_PRICE_NGN = 20000;
 export const PREMIUM_DURATION_MONTHS = 6;
